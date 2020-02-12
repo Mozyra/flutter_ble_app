@@ -1,0 +1,33 @@
+name: fullled
+description: Fullled bluetooth app.
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.3.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^0.1.2
+  flutter_bloc: ^3.2.0
+  flash: ^1.2.0
+  #flutter_ble_lib: ^2.1.0
+  flutter_blue:
+    git:
+      url: git://github.com/pauldemarco/flutter_blue.git
+      ref: master
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/files/Cat.png
+    - assets/files/Cat2.jpg
