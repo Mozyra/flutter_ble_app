@@ -60,6 +60,12 @@ class BluetoothUtil {
     return isConnected();
   }
 
+  //Future<List<>>
+
+  //2a69e811-f1eb-4c2f-9086-7d6b7d682a2e
+
+
+
   Future<Null> sendText(String text) async {
     Utf8Encoder utf8encoder = Utf8Encoder();
     List<int> convertedText;
@@ -74,6 +80,44 @@ class BluetoothUtil {
       }
     }
   }
+
+  Future<Null> sendRequest(String text) async {
+    String command = _textToCommand(text);
+    List<int> request = _textToRequest(text);
+
+    for (BluetoothService service in services) {
+      for (BluetoothCharacteristic characteristic in service.characteristics) {
+        if (characteristic.uuid.toString() == uuidDestination) {
+          if (characteristic.properties.write) {
+            await characteristic.write(request);
+            await _getResponse(command);
+          }
+        }
+      }
+    }
+  }
+
+  Future<String> _getResponse(String command) async {
+    await currentCharacteristic.read();
+  }
+
+  String _textToCommand(String text) {
+    if (text.startsWith('0')) {
+
+    }
+    if (text.startsWith('1')) {
+
+    }
+    else {
+      return throw Exception();
+    }
+  }
+
+  List<int> _textToRequest(String text) {
+
+  }
+
+
 
   Future disconnect() async {
     List<BluetoothDevice> connectedDevices = await _flutterBlue.connectedDevices;

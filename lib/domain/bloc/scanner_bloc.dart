@@ -1,12 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fullled/domain/bloc/loader_bloc.dart';
 
 import 'package:fullled/domain/repository/device_repository.dart';
 import 'package:fullled/domain/model/device.dart';
 
 class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
   final DeviceRepository _deviceRepository;
+  final LoaderBloc loaderBloc;
 
-  ScannerBloc(this._deviceRepository);
+  ScannerBloc(this._deviceRepository, this.loaderBloc);
 
   @override
   ScannerState get initialState => ScannerLoadingState();
@@ -27,21 +29,20 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
       final devices = await _deviceRepository.getBluetoothDevices();
       yield ScannerResultState(devices);
     }
-    catch (e) {
-      yield ScannerFailState(e);
+    catch (error) {
+      yield ScannerFailState(error);
     }
   }
 
   Stream<ScannerState> _mapScannerDeviceOpenState(Device device) async* {
-    print('connect');
-    yield ScannerConnectingState();
+    loaderBloc.add(LoaderStartEvent());
     try {
       await _deviceRepository.connect(device);
       yield ScannerDeviceOpenState();
-    } catch (e) {
-      print('');
-      yield ScannerFailState(e);
+    } catch (error) {
+      yield ScannerFailState(error);
     }
+    loaderBloc.add(LoaderStopEvent());
   }
 }
 
@@ -56,7 +57,6 @@ class ScannerDeviceClickedEvent extends ScannerEvent {
 abstract class ScannerState {}
 
 class ScannerLoadingState extends ScannerState {}
-class ScannerConnectingState extends ScannerState {}
 class ScannerDeviceOpenState extends ScannerState {}
 class ScannerResultState extends ScannerState {
   final List devices;

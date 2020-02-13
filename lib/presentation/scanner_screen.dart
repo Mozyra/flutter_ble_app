@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:fullled/domain/bloc/scanner_bloc.dart';
+import 'package:fullled/domain/bloc/loader_bloc.dart';
 import 'package:fullled/domain/model/device.dart';
 import 'package:fullled/internal/dependencies/application_component.dart';
 //import 'package:fullled/presentation/file_screen.dart';
@@ -18,7 +19,7 @@ class ScannerScreen extends StatefulWidget {
 }
 
 class _ScannerScreenState extends State<ScannerScreen> {
-  final ScannerBloc _scannerBloc = DeviceModule.scannerBloc();
+  final _scannerBloc = DeviceModule.scannerBloc();
 
   Completer<void> _refreshCompleter;
   final _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
@@ -65,7 +66,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       builder: (context, state) {
         return Stack(
           children: <Widget>[
-            if (state is ScannerConnectingState) Placeholders.loaderPlaceholder(),
+            _getLoader(),
             SafeArea(
               child: RefreshIndicator(
                 key: _refreshIndicatorKey,
@@ -136,32 +137,47 @@ class _ScannerScreenState extends State<ScannerScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             _deviceIcon(),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                if (name != '') Text(
-                  name,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16,),
-                  overflow: TextOverflow.fade,
-                )
-                else Text(
-                  'null',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16),),
-                SizedBox(width: 10,),
-                Text(
-                  address,
-                  softWrap: false,
-                  overflow: TextOverflow.fade,
-                ),
-              ],
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  if (name != '') Text(
+                    name,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16,),
+                    overflow: TextOverflow.fade,
+                  )
+                  else Text(
+                    'null',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16),
+                  ),
+                  SizedBox(width: 10,),
+                  Text(
+                    address,
+                    softWrap: false,
+                    overflow: TextOverflow.fade,
+                  ),
+                ],
+              ),
             ),
-
           ],
         ),
       ),
+    );
+  }
+
+  Widget _getLoader() {
+    return BlocBuilder<LoaderBloc, LoaderState> (
+        bloc: _scannerBloc.loaderBloc,
+        builder: (context, state) {
+          if (state is LoaderActiveState) {
+            return Placeholders.loaderPlaceholder();
+          } else {
+            return Container();
+          }
+        }
     );
   }
 

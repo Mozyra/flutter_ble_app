@@ -15,7 +15,7 @@ class FileListScreen extends StatefulWidget {
 }
 
 class _FileListScreenState extends State<FileListScreen> {
-  final FileBloc _fileBloc = FileModule.fileBloc();
+  final _fileBloc = FileModule.fileBloc();
 
   @override
   void initState() {

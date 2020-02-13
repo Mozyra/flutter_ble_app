@@ -17,7 +17,7 @@ class FileContentScreen extends StatefulWidget {
 }
 
 class _FileContentScreenState extends State<FileContentScreen> {
-  final FileContentBloc _fileContentBloc = FileContentModule.fileContentBloc();
+  final _fileContentBloc = FileContentModule.fileContentBloc();
 
   @override
   void initState() {
