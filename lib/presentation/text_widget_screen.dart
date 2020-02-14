@@ -8,8 +8,12 @@ import 'package:fullled/domain/bloc/text_widget_bloc.dart';
 import 'package:fullled/internal/dependencies/application_component.dart';
 import 'package:fullled/presentation/design/placeholders.dart';
 import 'package:fullled/domain/bloc/loader_bloc.dart';
+import 'package:fullled/domain/model/text_widget.dart';
 
 class TextWidgetScreen extends StatefulWidget {
+  final TextWidget textWidget;
+
+  TextWidgetScreen(this.textWidget);
 
   @override
   _TextWidgetScreenState createState() => _TextWidgetScreenState();
@@ -124,13 +128,23 @@ class _TextWidgetScreenState extends State<TextWidgetScreen> {
                       labelText: 'Send english text to device',
                     ),
                     onSubmitted: (_) {
-                      _textWidgetBloc.add(TextWidgetSendTextEvent(_controller.text));
+                      print(widget.textWidget.uuid);
+                      _textWidgetBloc.add(TextWidgetSendTextEvent(
+                          widget.textWidget.uuid,
+                          _controller.text
+                        )
+                      );
                     }
                   ),
                   SizedBox(height: 10,),
                   RaisedButton(
                     onPressed: () {
-                      _textWidgetBloc.add(TextWidgetSendTextEvent(_controller.text));
+                      print(widget.textWidget.uuid);
+                      _textWidgetBloc.add(TextWidgetSendTextEvent(
+                          widget.textWidget.uuid,
+                          _controller.text
+                        )
+                      );
                     },
                     child: Text('Отправить'),
                   ),

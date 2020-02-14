@@ -1,27 +1,26 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:fullled/domain/bloc/scanner_bloc.dart';
+import 'package:fullled/domain/bloc/widgets_list_bloc.dart';
+import 'package:flutter/material.dart';
 import 'package:fullled/domain/bloc/loader_bloc.dart';
-import 'package:fullled/domain/model/device.dart';
 import 'package:fullled/internal/dependencies/application_component.dart';
-import 'package:fullled/presentation/widgets_list_screen.dart';
 import 'package:fullled/presentation/design/placeholders.dart';
+import 'package:fullled/presentation/text_widget_screen.dart';
+import 'package:fullled/domain/model/text_widget.dart';
 
-class ScannerScreen extends StatefulWidget {
+class WidgetsListScreen extends StatefulWidget {
 
   @override
-  _ScannerScreenState createState() => _ScannerScreenState();
+  _WidgetsListScreenState createState() => _WidgetsListScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen> {
-  final _scannerBloc = DeviceModule.scannerBloc();
-
+class _WidgetsListScreenState extends State<WidgetsListScreen> {
+  final _widgetsListBloc = WidgetsListModule.widgetsListBloc();
   Completer<void> _refreshCompleter;
   final _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+
 
   @override
   void initState() {
@@ -33,19 +32,19 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   void dispose() {
-    _scannerBloc.close();
+    _widgetsListBloc.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ScannerBloc, ScannerState>(
+    return BlocListener<WidgetsListBloc, WidgetsListState>(
       listener: (context, state) {
-        if (state is ScannerResultState) _refreshCompleter.complete();
-        if (state is ScannerDeviceOpenState) _openDevicePage();
-        if (state is ScannerFailState) _refreshCompleter.complete();
+        if (state is WidgetsListResultState) _refreshCompleter.complete();
+        if (state is WidgetsListWidgetOpenState) _openWidgetPage(state.textWidget);
+        if (state is WidgetsListFailState) _refreshCompleter.complete();
       },
-      bloc: _scannerBloc,
+      bloc: _widgetsListBloc,
       child: Scaffold(
         appBar: _getAppBar(),
         body: _getBody(),
@@ -55,13 +54,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   Widget _getAppBar() {
     return AppBar(
-      title: Text('Список устройств'),
+      title: Text('Список виджетов'),
     );
   }
 
   Widget _getBody() {
-    return BlocBuilder<ScannerBloc, ScannerState>(
-      bloc: _scannerBloc,
+    return BlocBuilder<WidgetsListBloc, WidgetsListState>(
+      bloc: _widgetsListBloc,
       builder: (context, state) {
         return Stack(
           children: <Widget>[
@@ -71,10 +70,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 key: _refreshIndicatorKey,
                 onRefresh: () {
                   _refreshCompleter = Completer();
-                  _scannerBloc.add(ScannerRefreshEvent());
+                  _widgetsListBloc.add(WidgetsListRefreshEvent());
                   return _refreshCompleter.future;
                 },
-                child: _getScannerLayout(),
+                child: _getWidgetsListLayout(),
               ),
             ),
           ],
@@ -83,80 +82,67 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  Widget _getScannerLayout() {
-    return BlocBuilder<ScannerBloc, ScannerState>(
-      bloc: _scannerBloc,
+  Widget _getWidgetsListLayout() {
+    return BlocBuilder<WidgetsListBloc, WidgetsListState>(
+      bloc: _widgetsListBloc,
       builder: (context, state) {
         final widgets = List<Widget>();
-        if (state is ScannerLoadingState) {
+        if (state is WidgetsListLoadingState) {
           widgets.add(Placeholders.stringPlaceholder('Загрузка...')
           );
         }
-        if (state is ScannerFailState) {
+        if (state is WidgetsListFailState) {
           widgets.add(Placeholders.stringPlaceholder('${state.error}'));
         }
-        if (state is ScannerResultState) {
-          List<Widget> listDevices = _getListDevice(state.devices);
-          if (listDevices.isEmpty) {
+        if (state is WidgetsListResultState) {
+          List<Widget> listWidgets = _getListWidget(state.textWidgets);
+          if (listWidgets.isEmpty) {
             widgets.add(Placeholders.stringPlaceholder('Устройства не найдены'));
           }
-          else widgets.addAll(listDevices);
+          else widgets.addAll(listWidgets);
         }
         return _getResult(widgets);
       },
     );
   }
 
-  Widget _getResult(List<Widget> widgets) {
+  Widget _getResult(List<Widget> textWidgets) {
     return ListView.separated(
       padding: EdgeInsets.all(10),
       physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: widgets.length,
-      itemBuilder: (context, index) => widgets[index],
+      itemCount: textWidgets.length,
+      itemBuilder: (context, index) => textWidgets[index],
       separatorBuilder: (context, index) => Divider(),
     );
   }
 
-  List<Widget> _getListDevice(List<Device> devices) {
-    return devices
-        .map((device) => _getDeviceItem(device))
+  List<Widget> _getListWidget(List<TextWidget> widgets) {
+    return widgets
+        .map((textWidget) => _getWidgetItem(textWidget))
         .toList(growable: false);
   }
 
-  Widget _getDeviceItem(Device device) {
-    final name = device.name;
-    final address = device.address;
+  Widget _getWidgetItem(TextWidget textWidget) {
+    //final name = textWidget.name;
+    final uuid = textWidget.uuid;
 
     return InkWell(
-      onTap: () => _scannerBloc.add(ScannerDeviceClickedEvent(device)),
+      onTap: () => _widgetsListBloc.add(WidgetsListClickedEvent(textWidget)),
       child: Container(
         height: 45,
         child: Row(
-          //mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            _deviceIcon(),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  if (name != '') Text(
-                    name,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16,),
-                    overflow: TextOverflow.fade,
-                  )
-                  else Text(
-                    'null',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                  ),
-                  SizedBox(width: 10,),
                   Text(
-                    address,
+                    uuid,
                     softWrap: false,
                     overflow: TextOverflow.fade,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16,),
                   ),
                 ],
               ),
@@ -169,7 +155,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   Widget _getLoader() {
     return BlocBuilder<LoaderBloc, LoaderState> (
-        bloc: _scannerBloc.loaderBloc,
+        bloc: _widgetsListBloc.loaderBloc,
         builder: (context, state) {
           if (state is LoaderActiveState) {
             return Placeholders.loaderPlaceholder();
@@ -180,15 +166,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  Widget _deviceIcon() {
-    return Icon(Icons.bluetooth);
-  }
-
-  void _openDevicePage() async {
+  void _openWidgetPage(TextWidget textWidget) async {
     Navigator.pushReplacement(
       context,
-//        MaterialPageRoute(builder: (context) => FileListScreen(device)));
-      MaterialPageRoute(builder: (context) => WidgetsListScreen()),
+      MaterialPageRoute(builder: (context) => TextWidgetScreen(textWidget)),
     );
   }
+
 }

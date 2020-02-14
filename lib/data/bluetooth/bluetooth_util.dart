@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_blue/flutter_blue.dart';
 
@@ -42,8 +41,11 @@ class BluetoothUtil {
     scanSubscription = null;
   }
 
+  Future<Null> sendRequest(List<int> request) async {
+    await currentCharacteristic.write(request);
+  }
+
   Future<List<File>> getFiles() async {
-    disconnect();
     return Future.delayed(Duration(seconds: 1), () => [cat, anotherCat]);
   }
 
@@ -57,67 +59,28 @@ class BluetoothUtil {
         autoConnect: false, timeout: Duration(seconds: 5));
     currentDevice = bluetoothDevice;
     services = await currentDevice.discoverServices();
+    for (BluetoothService service in services) {
+      for (BluetoothCharacteristic characteristic in service.characteristics) {
+        if (characteristic.uuid.toString() == uuidDestination) {
+          currentCharacteristic = characteristic;
+        }
+      }
+    }
     return isConnected();
   }
 
-  //Future<List<>>
-
-  //2a69e811-f1eb-4c2f-9086-7d6b7d682a2e
-
-
-
-  Future<Null> sendText(String text) async {
-    Utf8Encoder utf8encoder = Utf8Encoder();
-    List<int> convertedText;
-    convertedText = utf8encoder.convert(text);
-    for (BluetoothService service in services) {
-      for (BluetoothCharacteristic characteristic in service.characteristics) {
-        if (characteristic.uuid.toString() == uuidDestination) {
-          if (characteristic.properties.write) {
-            await characteristic.write(convertedText);
-          }
-        }
+  Future<List<int>> getResponse() async {
+    //await currentCharacteristic.setNotifyValue(true);
+    List<int> response = [];
+    StreamSubscription subscription = currentCharacteristic.value.listen((scanResult) {
+      if (scanResult.length > response.length) {
+        response = scanResult;
       }
-    }
+    });
+    await Future.delayed(Duration(seconds: 4));
+    subscription.cancel();
+    return response;
   }
-
-  Future<Null> sendRequest(String text) async {
-    String command = _textToCommand(text);
-    List<int> request = _textToRequest(text);
-
-    for (BluetoothService service in services) {
-      for (BluetoothCharacteristic characteristic in service.characteristics) {
-        if (characteristic.uuid.toString() == uuidDestination) {
-          if (characteristic.properties.write) {
-            await characteristic.write(request);
-            await _getResponse(command);
-          }
-        }
-      }
-    }
-  }
-
-  Future<String> _getResponse(String command) async {
-    await currentCharacteristic.read();
-  }
-
-  String _textToCommand(String text) {
-    if (text.startsWith('0')) {
-
-    }
-    if (text.startsWith('1')) {
-
-    }
-    else {
-      return throw Exception();
-    }
-  }
-
-  List<int> _textToRequest(String text) {
-
-  }
-
-
 
   Future disconnect() async {
     List<BluetoothDevice> connectedDevices = await _flutterBlue.connectedDevices;
@@ -128,7 +91,6 @@ class BluetoothUtil {
       Future.delayed(Duration(seconds: 6));
     }
     List<BluetoothDevice> connectedDevicesNew = await _flutterBlue.connectedDevices;
-    print('after');
     for (var device in connectedDevicesNew) {
       print(device.name);
     }

@@ -55,7 +55,7 @@ class TextWidgetBloc extends Bloc<TextWidgetEvent, TextWidgetState> {
   @override
   Stream<TextWidgetState> mapEventToState(TextWidgetEvent event) async* {
     if (event is TextWidgetSendTextEvent) {
-      yield* _mapTextWidgetSendToState(event.text);
+      yield* _mapTextWidgetSendToState(event.uuid, event.text);
     }
     if (event is TextWidgetSettingsEvent) {
       yield* _mapTextWidgetSettingsToState();
@@ -65,10 +65,10 @@ class TextWidgetBloc extends Bloc<TextWidgetEvent, TextWidgetState> {
     }
   }
 
-  Stream<TextWidgetState> _mapTextWidgetSendToState(String text) async* {
+  Stream<TextWidgetState> _mapTextWidgetSendToState(String uuid, String text) async* {
     loaderBloc.add(LoaderStartEvent());
       try {
-        await _deviceRepository.sendText(text);
+        await _deviceRepository.sendText(uuid, text);
         yield TextWidgetResultState();
       }
       catch (error) {
@@ -91,8 +91,9 @@ abstract class TextWidgetEvent {}
 
 class TextWidgetSettingsEvent extends TextWidgetEvent {}
 class TextWidgetSendTextEvent extends TextWidgetEvent {
+  final String uuid;
   final String text;
-  TextWidgetSendTextEvent(this.text);
+  TextWidgetSendTextEvent(this.uuid, this.text);
 }
 class TextWidgetFailEvent extends TextWidgetEvent {
   final error;

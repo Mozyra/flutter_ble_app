@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_blue/flutter_blue.dart';
 import '../bluetooth/bluetooth_util.dart';
 import 'package:fullled/domain/model/device.dart';
 import 'package:fullled/domain/repository/device_repository.dart';
 import 'package:fullled/domain/model/file.dart';
+import 'package:fullled/domain/model/text_widget.dart';
 
 enum BlueState {
   unknown,
@@ -100,11 +102,68 @@ class DeviceDataRepository extends DeviceRepository {
     return _bluetoothUtil.getValues();
   }
 
-  Future<Null> sendText(String text) async {
-    return _bluetoothUtil.sendText(text);
-  }
-
+  @override
   Future<List<File>> getFiles() async {
     return _bluetoothUtil.getFiles();
+  }
+
+  @override
+  Future<Null> sendText(String uuid, String text) async {
+    print(text);
+    List<int> request = _getWriteRequest(uuid, text);
+    await _bluetoothUtil.sendRequest(request);
+    List<String> response = await _getResponse();
+    if (response.isEmpty) {
+      return await null;
+    }
+  }
+
+  @override
+  Future<List<TextWidget>> getWidgets() async {
+    List<int> request = _getReadRequest();
+    await _bluetoothUtil.sendRequest(request);
+    Future.delayed(Duration(seconds: 2));
+    List<String> response = await _getResponse();
+    List<TextWidget> textWidgets = [];
+    for (String uuid in response) {
+      textWidgets.add(TextWidget(uuid));
+    }
+    return textWidgets;
+  }
+
+  Future<List<String>> _getResponse() async {
+    List<int> unconvertedResponse = await _bluetoothUtil.getResponse();
+    String response = _decode(unconvertedResponse);
+    print(response);
+    if (response.startsWith('0;')) {
+      List<String> params = [];
+      if (response == '0;') {
+        return params;
+      }
+      response = response.substring(2, response.length-1);
+      return params = response.split(';');
+    }
+    else {
+      throw Exception(response.substring(2));
+    }
+  }
+
+  List<int> _getReadRequest() {
+    return _encode('0;');
+  }
+
+  List<int> _getWriteRequest(String uuid, String text) {
+    return _encode('1;$uuid;$text;');
+  }
+
+  List<int> _encode(String command) {
+    final utf8encoder = Utf8Encoder();
+    print(utf8encoder.convert('0;'));
+    return utf8encoder.convert(command);
+  }
+
+  String _decode(List<int> unconvertedResponse) {
+    final utf8decoder = Utf8Decoder();
+    return utf8decoder.convert(unconvertedResponse);
   }
 }

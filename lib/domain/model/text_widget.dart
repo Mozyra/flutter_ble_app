@@ -1,10 +1,11 @@
 
 class TextWidget {
   final String uuid;
-  final String name;
+  String name;
 
   TextWidget(
-      this.uuid,
+      this.uuid, {
       this.name,
+      }
   );
 }
