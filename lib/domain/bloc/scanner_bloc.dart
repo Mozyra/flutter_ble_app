@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fullled/domain/bloc/loader_bloc.dart';
 
+import 'package:fullled/domain/bloc/loader_bloc.dart';
 import 'package:fullled/domain/repository/device_repository.dart';
 import 'package:fullled/domain/model/device.dart';
 

@@ -5,4 +5,5 @@ import 'device_repository_module.dart';
 class DeviceModule {
   static ScannerBloc scannerBloc() {
     return ScannerBloc(DeviceRepositoryModule.deviceRepository(), LoaderBloc());
-  }}
+  }
+}

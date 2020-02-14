@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter_blue/flutter_blue.dart';
 import '../bluetooth/bluetooth_util.dart';
-import 'package:fullled/domain/model/device.dart';
 import 'package:fullled/domain/repository/device_repository.dart';
+import 'package:fullled/domain/model/device.dart';
 import 'package:fullled/domain/model/file.dart';
 import 'package:fullled/domain/model/text_widget.dart';
 
@@ -86,18 +86,22 @@ class DeviceDataRepository extends DeviceRepository {
     return _bluetoothUtil.getBluetoothDevices();
   }
 
+  @override
   Future<bool> connect(Device device) async {
     return await _bluetoothUtil.connect(device);
   }
 
+  @override
   Future<void> disconnect() async {
     return _bluetoothUtil.disconnect();
   }
 
+  @override
   Future<Null> reconnect() async {
     return _bluetoothUtil.reconnect();
   }
 
+  @override
   Future<List<String>> getValues() async {
     return _bluetoothUtil.getValues();
   }

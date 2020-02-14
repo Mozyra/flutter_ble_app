@@ -4,6 +4,6 @@ import '../dependencies/device/device_repository_module.dart';
 
 class TextWidgetModule {
   static TextWidgetBloc textWidgetBloc() {
-    return TextWidgetBloc(DeviceRepositoryModule.deviceRepository(), LoaderBloc);
+    return TextWidgetBloc(DeviceRepositoryModule.deviceRepository(), LoaderBloc());
   }
 }

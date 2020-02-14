@@ -7,7 +7,7 @@ import 'package:fullled/domain/bloc/loader_bloc.dart';
 
 class TextWidgetBloc extends Bloc<TextWidgetEvent, TextWidgetState> {
   final DeviceRepository _deviceRepository;
-  final loaderBloc;
+  final LoaderBloc loaderBloc;
 
   StreamSubscription<BlueState> _blueStateSubscription;
   StreamSubscription<BlueDeviceState> _blueDeviceStateSubscription;

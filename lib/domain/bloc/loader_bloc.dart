@@ -7,7 +7,6 @@ class LoaderBloc extends Bloc<LoaderEvent, LoaderState> {
 
   @override
   Stream<LoaderState> mapEventToState(LoaderEvent event) async* {
-    print(event);
     if (event is LoaderStartEvent) {
       yield* _mapLoaderStartToState();
     }
@@ -17,7 +16,6 @@ class LoaderBloc extends Bloc<LoaderEvent, LoaderState> {
   }
 
   Stream<LoaderState> _mapLoaderStartToState() async* {
-    print('');
     yield LoaderActiveState();
   }
 
