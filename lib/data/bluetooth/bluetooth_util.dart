@@ -70,7 +70,7 @@ class BluetoothUtil {
   }
 
   Future<List<int>> getResponse() async {
-    //await currentCharacteristic.setNotifyValue(true);
+    await currentCharacteristic.setNotifyValue(true);
     List<int> response = [];
     StreamSubscription subscription = currentCharacteristic.value.listen((scanResult) {
       if (scanResult.length > response.length) {
@@ -86,7 +86,7 @@ class BluetoothUtil {
     List<BluetoothDevice> connectedDevices = await _flutterBlue.connectedDevices;
     for (BluetoothDevice connectedDevice in connectedDevices) {
       await connectedDevice.disconnect();
-      await Future.delayed(Duration(seconds: 5));
+      await Future.delayed(Duration(seconds: 3));
     }
     List<BluetoothDevice> connectedDevicesNew = await _flutterBlue.connectedDevices;
     for (var device in connectedDevicesNew) {
