@@ -179,9 +179,7 @@ class _TextWidgetScreenState extends State<TextWidgetScreen> {
   }
 
   void _openScannerPage() {
-    print('to Scanner');
     Navigator.pushReplacement(context,
         MaterialPageRoute(builder: (context) => ScannerScreen()));
   }
-
 }

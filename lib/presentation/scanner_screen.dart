@@ -109,7 +109,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   Widget _getResult(List<Widget> widgets) {
     return ListView.separated(
-      padding: EdgeInsets.all(10),
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: widgets.length,
       itemBuilder: (context, index) => widgets[index],

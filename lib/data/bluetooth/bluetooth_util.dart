@@ -86,7 +86,7 @@ class BluetoothUtil {
     List<BluetoothDevice> connectedDevices = await _flutterBlue.connectedDevices;
     for (BluetoothDevice connectedDevice in connectedDevices) {
       await connectedDevice.disconnect();
-      await Future.delayed(Duration(seconds: 6));
+      await Future.delayed(Duration(seconds: 5));
     }
     List<BluetoothDevice> connectedDevicesNew = await _flutterBlue.connectedDevices;
     for (var device in connectedDevicesNew) {

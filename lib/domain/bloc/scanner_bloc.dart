@@ -42,7 +42,9 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     } catch (error) {
       yield ScannerFailState(error);
     }
-    loaderBloc.add(LoaderStopEvent());
+    finally {
+      loaderBloc.add(LoaderStopEvent());
+    }
   }
 }
 

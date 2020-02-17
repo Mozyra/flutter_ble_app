@@ -1,9 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:fullled/domain/bloc/widgets_list_bloc.dart';
-import 'package:flutter/material.dart';
 import 'package:fullled/domain/bloc/loader_bloc.dart';
 import 'package:fullled/internal/dependencies/application_component.dart';
 import 'package:fullled/presentation/design/placeholders.dart';
@@ -40,9 +41,15 @@ class _WidgetsListScreenState extends State<WidgetsListScreen> {
   Widget build(BuildContext context) {
     return BlocListener<WidgetsListBloc, WidgetsListState>(
       listener: (context, state) {
-        if (state is WidgetsListResultState) _refreshCompleter.complete();
-        if (state is WidgetsListWidgetOpenState) _openWidgetPage(state.textWidget);
-        if (state is WidgetsListFailState) _refreshCompleter.complete();
+        if (state is WidgetsListResultState) {
+          _refreshCompleter.complete();
+        }
+        if (state is WidgetsListWidgetOpenState) {
+          _openWidgetPage(state.textWidget);
+        }
+        if (state is WidgetsListFailState) {
+          _refreshCompleter.complete();
+        }
       },
       bloc: _widgetsListBloc,
       child: Scaffold(
@@ -97,7 +104,7 @@ class _WidgetsListScreenState extends State<WidgetsListScreen> {
         if (state is WidgetsListResultState) {
           List<Widget> listWidgets = _getListWidget(state.textWidgets);
           if (listWidgets.isEmpty) {
-            widgets.add(Placeholders.stringPlaceholder('Устройства не найдены'));
+            widgets.add(Placeholders.stringPlaceholder('Виджеты не найдены'));
           }
           else widgets.addAll(listWidgets);
         }
@@ -123,7 +130,6 @@ class _WidgetsListScreenState extends State<WidgetsListScreen> {
   }
 
   Widget _getWidgetItem(TextWidget textWidget) {
-    //final name = textWidget.name;
     final uuid = textWidget.uuid;
 
     return InkWell(

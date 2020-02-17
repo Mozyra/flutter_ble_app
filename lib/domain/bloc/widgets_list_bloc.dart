@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fullled/domain/model/text_widget.dart';
 
-//import 'package:fullled/data/repository/device_data_repository.dart';
 import 'package:fullled/domain/repository/device_repository.dart';
 import 'package:fullled/domain/bloc/loader_bloc.dart';
 
@@ -42,7 +41,9 @@ class WidgetsListBloc extends Bloc<WidgetsListEvent, WidgetsListState> {
     } catch (error) {
       yield WidgetsListFailState(error);
     }
-    loaderBloc.add(LoaderStopEvent());
+    finally {
+      loaderBloc.add(LoaderStopEvent());
+    }
   }
 }
 

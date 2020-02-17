@@ -126,7 +126,7 @@ class DeviceDataRepository extends DeviceRepository {
   Future<List<TextWidget>> getWidgets() async {
     List<int> request = _getReadRequest();
     await _bluetoothUtil.sendRequest(request);
-    Future.delayed(Duration(seconds: 2));
+    await Future.delayed(Duration(seconds: 2));
     List<String> response = await _getResponse();
     List<TextWidget> textWidgets = [];
     for (String uuid in response) {
@@ -162,7 +162,6 @@ class DeviceDataRepository extends DeviceRepository {
 
   List<int> _encode(String command) {
     final utf8encoder = Utf8Encoder();
-    print(utf8encoder.convert('0;'));
     return utf8encoder.convert(command);
   }
 
