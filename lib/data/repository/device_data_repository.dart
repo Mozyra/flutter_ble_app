@@ -2,28 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_blue/flutter_blue.dart';
-import '../bluetooth/bluetooth_util.dart';
+
+import 'package:fullled/data/bluetooth/bluetooth_util.dart';
 import 'package:fullled/domain/repository/device_repository.dart';
 import 'package:fullled/domain/model/device.dart';
 import 'package:fullled/domain/model/file.dart';
 import 'package:fullled/domain/model/text_widget.dart';
-
-enum BlueState {
-  unknown,
-  unavailable,
-  unauthorized,
-  turningOn,
-  on,
-  turningOff,
-  off
-}
-
-enum BlueDeviceState {
-  disconnected,
-  connecting,
-  connected,
-  disconnecting
-}
 
 class DeviceDataRepository extends DeviceRepository {
   final BluetoothUtil _bluetoothUtil;
@@ -32,6 +16,22 @@ class DeviceDataRepository extends DeviceRepository {
 
   DeviceDataRepository(this._bluetoothUtil);
 
+  @override
+  Future<List<Device>> getBluetoothDevices() {
+    return _bluetoothUtil.getBluetoothDevices();
+  }
+
+  @override
+  Future<void> connect(Device device) {
+    return _bluetoothUtil.connect(device);
+  }
+
+  @override
+  Future<void> disconnect() {
+    return _bluetoothUtil.disconnect();
+  }
+
+  @override
   Stream<BlueState> blueState() {
     return _bluetoothUtil.getBluetoothState().map((state) {
       switch (state) {
@@ -61,112 +61,100 @@ class DeviceDataRepository extends DeviceRepository {
     });
   }
 
+  @override
   Stream<BlueDeviceState> blueDeviceState(){
     return _bluetoothUtil.getBluetoothDeviceState().map((state) {
-        switch (state) {
-          case BluetoothDeviceState.disconnected:
-            bluetoothDeviceState = BlueDeviceState.disconnected;
-            break;
-          case BluetoothDeviceState.connecting:
-            bluetoothDeviceState = BlueDeviceState.connecting;
-            break;
-          case BluetoothDeviceState.connected:
-            bluetoothDeviceState = BlueDeviceState.connected;
-            break;
-          case BluetoothDeviceState.disconnecting:
-            bluetoothDeviceState = BlueDeviceState.disconnecting;
-            break;
+      switch (state) {
+        case BluetoothDeviceState.disconnected:
+          bluetoothDeviceState = BlueDeviceState.disconnected;
+          break;
+        case BluetoothDeviceState.connecting:
+          bluetoothDeviceState = BlueDeviceState.connecting;
+          break;
+        case BluetoothDeviceState.connected:
+          bluetoothDeviceState = BlueDeviceState.connected;
+          break;
+        case BluetoothDeviceState.disconnecting:
+          bluetoothDeviceState = BlueDeviceState.disconnecting;
+          break;
       }
-        return bluetoothDeviceState;
+      return bluetoothDeviceState;
     });
   }
 
   @override
-  Future<List<Device>> getBluetoothDevices() async {
-    return _bluetoothUtil.getBluetoothDevices();
+  Future<List<TextWidget>> getWidgets() async {
+    final request = _encode('0;');
+    final response = await _bluetoothUtil.sendRequest(request);
+    final uuidList = _parseResponse(response).split(',');
+    return uuidList
+        .map((uuid) => TextWidget(uuid))
+        .toList(growable: false);
   }
 
   @override
-  Future<bool> connect(Device device) async {
-    return await _bluetoothUtil.connect(device);
-  }
-
-  @override
-  Future<void> disconnect() async {
-    return _bluetoothUtil.disconnect();
-  }
-
-  @override
-  Future<Null> reconnect() async {
-    return _bluetoothUtil.reconnect();
+  Future<void> sendText(String uuid, String text) async {
+    final request = _encode('1;$uuid;$text;');
+    final response = await _bluetoothUtil.sendRequest(request);
+    return _parseResponse(response);
   }
 
   @override
   Future<List<String>> getValues() async {
-    return _bluetoothUtil.getValues();
+    await Future.delayed(Duration(seconds: 2));
+    return ['a','2', '3', '4', '2', 'z'];
   }
 
   @override
   Future<List<File>> getFiles() async {
-    return _bluetoothUtil.getFiles();
+    await Future.delayed(Duration(seconds: 1));
+    return [
+      File('Cat', 'png', FileType.IMAGE_FILE),
+      File('Cat2', 'jpg', FileType.IMAGE_FILE)
+    ];
   }
 
-  @override
-  Future<Null> sendText(String uuid, String text) async {
-    print(text);
-    List<int> request = _getWriteRequest(uuid, text);
-    await _bluetoothUtil.sendRequest(request);
-    List<String> response = await _getResponse();
-    if (response.isEmpty) {
-      return await null;
-    }
-  }
+  String _parseResponse(List<int> response) {
+    final result = _decode(response);
+    final values = result.split(';');
 
-  @override
-  Future<List<TextWidget>> getWidgets() async {
-    List<int> request = _getReadRequest();
-    await _bluetoothUtil.sendRequest(request);
-    await Future.delayed(Duration(seconds: 2));
-    List<String> response = await _getResponse();
-    List<TextWidget> textWidgets = [];
-    for (String uuid in response) {
-      textWidgets.add(TextWidget(uuid));
-    }
-    return textWidgets;
-  }
+    if (values.length > 1) {
+      final responseId = values[0];
+      final parameters = values[1];
 
-  Future<List<String>> _getResponse() async {
-    List<int> unconvertedResponse = await _bluetoothUtil.getResponse();
-    String response = _decode(unconvertedResponse);
-    print(response);
-    if (response.startsWith('0;')) {
-      List<String> params = [];
-      if (response == '0;') {
-        return params;
+      if (responseId == '0') {
+        return parameters;
+      } else {
+        throw Exception(parameters);
       }
-      response = response.substring(2, response.length-1);
-      return params = response.split(';');
     }
-    else {
-      throw Exception(response.substring(2));
-    }
+    throw Exception('Unable to decode response');
   }
 
-  List<int> _getReadRequest() {
-    return _encode('0;');
-  }
-
-  List<int> _getWriteRequest(String uuid, String text) {
-    return _encode('1;$uuid;$text;');
-  }
-
-  List<int> _encode(String command) {
+  List<int> _encode(String value) {
     final utf8encoder = Utf8Encoder();
-    return utf8encoder.convert(command);
+    return utf8encoder.convert(value).toList(growable: false);
   }
 
-  String _decode(List<int> unconvertedResponse) {
+  String _decode(List<int> values) {
     final utf8decoder = Utf8Decoder();
-    return utf8decoder.convert(unconvertedResponse);
+    return utf8decoder.convert(values);
   }
+}
+
+enum BlueState {
+  unknown,
+  unavailable,
+  unauthorized,
+  turningOn,
+  on,
+  turningOff,
+  off
+}
+
+enum BlueDeviceState {
+  disconnected,
+  connecting,
+  connected,
+  disconnecting
 }

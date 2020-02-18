@@ -3,107 +3,48 @@ import 'dart:async';
 import 'package:flutter_blue/flutter_blue.dart';
 
 import 'package:fullled/domain/model/device.dart';
-import 'package:fullled/domain/model/file.dart';
 
 class BluetoothUtil {
-  FlutterBlue _flutterBlue = FlutterBlue.instance;
-  StreamSubscription scanSubscription;
-  BluetoothDevice currentDevice;
-  BluetoothCharacteristic currentCharacteristic;
-  String uuidDestination = '2a69e811-f1eb-4c2f-9086-7d6b7d682a2e';
-  List<BluetoothService> services;
-  Map<String, BluetoothDevice> blueDevices = {};
+  static const _UUID_PATTERN = '0000ec0e';
 
-  File cat = File('Cat', 'png', FileType.IMAGE_FILE);
-  File anotherCat = File('Cat2', 'jpg', FileType.IMAGE_FILE);
+  final _flutterBlue = FlutterBlue.instance;
+
+  BluetoothDevice _currentDevice;
+  Map<String, BluetoothDevice> _blueDevices = {};
 
   Future<List<Device>> getBluetoothDevices() async {
-    blueDevices.clear();
+    _blueDevices.clear();
     disconnect();
-    List<Device> devicesNew = [];
+    final deviceList = List<Device>();
     if (await _flutterBlue.isOn) {
-      scanSubscription = _flutterBlue.scan(timeout: const Duration(seconds: 3))
+      final scanSubscription = _flutterBlue.scan(timeout: const Duration(seconds: 3))
           .listen((scanResult) {
-        if (!blueDevices.containsKey(scanResult.device.id.toString())) {
-          blueDevices[scanResult.device.id.toString()] = scanResult.device;
-          devicesNew.add(_blueDeviceToDevice(scanResult.device));
+        if (!_blueDevices.containsKey(scanResult.device.id.toString())) {
+          _blueDevices[scanResult.device.id.toString()] = scanResult.device;
+          deviceList.add(_blueDeviceToDevice(scanResult.device));
         }
       });
       await Future.delayed(Duration(milliseconds: 3500));
-      _stopScan();
+      await _flutterBlue.stopScan();
+      await scanSubscription.cancel();
     }
-    return devicesNew;
+    return deviceList;
   }
 
-  _stopScan() {
-    _flutterBlue.stopScan();
-    scanSubscription?.cancel();
-    scanSubscription = null;
-  }
-
-  Future<Null> sendRequest(List<int> request) async {
-    await currentCharacteristic.write(request);
-  }
-
-  Future<List<File>> getFiles() async {
-    return Future.delayed(Duration(seconds: 1), () => [cat, anotherCat]);
-  }
-
-  Future<List<String>> getValues() async {
-    return Future.delayed(Duration(seconds: 2), () => ['a','2', '3', '4', '2', 'z']);
-  }
-
-  Future<bool> connect(Device device) async {
+  Future<void> connect(Device device) async {
     BluetoothDevice bluetoothDevice = _deviceToBlueDevice(device);
     await bluetoothDevice.connect(
-        autoConnect: false, timeout: Duration(seconds: 5));
-    currentDevice = bluetoothDevice;
-    services = await currentDevice.discoverServices();
-    for (BluetoothService service in services) {
-      for (BluetoothCharacteristic characteristic in service.characteristics) {
-        if (characteristic.uuid.toString() == uuidDestination) {
-          currentCharacteristic = characteristic;
-        }
-      }
-    }
-    return isConnected();
+      autoConnect: false,
+      timeout: Duration(seconds: 5),
+    );
+    _currentDevice = bluetoothDevice;
   }
 
-  Future<List<int>> getResponse() async {
-    await currentCharacteristic.setNotifyValue(true);
-    List<int> response = [];
-    StreamSubscription subscription = currentCharacteristic.value.listen((scanResult) {
-      if (scanResult.length > response.length) {
-        response = scanResult;
-      }
-    });
-    await Future.delayed(Duration(seconds: 4));
-    subscription.cancel();
-    return response;
-  }
-
-  Future disconnect() async {
-    List<BluetoothDevice> connectedDevices = await _flutterBlue.connectedDevices;
-    for (BluetoothDevice connectedDevice in connectedDevices) {
-      await connectedDevice.disconnect();
-      await Future.delayed(Duration(seconds: 3));
+  Future<void> disconnect() async {
+    final connectedDevices = await _flutterBlue.connectedDevices;
+    for (final device in connectedDevices) {
+      await device.disconnect();
     }
-    List<BluetoothDevice> connectedDevicesNew = await _flutterBlue.connectedDevices;
-    for (var device in connectedDevicesNew) {
-      print(device.name);
-    }
-  }
-
-  Future<Null> reconnect() async {
-      await connect(_blueDeviceToDevice(currentDevice));
-  }
-
-  Future<bool> isConnected() async {
-    final state = await currentDevice.state.first;
-    if (state == BluetoothDeviceState.connected) {
-      return true;
-    }
-    else return false;
   }
 
   Stream<BluetoothState> getBluetoothState() async* {
@@ -111,11 +52,30 @@ class BluetoothUtil {
   }
 
   Stream<BluetoothDeviceState> getBluetoothDeviceState() async* {
-    yield* currentDevice.state;
+    yield* _currentDevice.state;
+  }
+
+  Future<List<int>> sendRequest(List<int> request) async {
+    final characteristic = await _getCharacteristic();
+    await characteristic.write(request);
+    List<int> response = await characteristic.read();
+    return response;
+  }
+
+  Future<BluetoothCharacteristic> _getCharacteristic() async {
+    final services = await _currentDevice.discoverServices();
+    for (BluetoothService service in services) {
+      for (BluetoothCharacteristic characteristic in service.characteristics) {
+        if (characteristic.uuid.toString().startsWith(_UUID_PATTERN)) {
+          return characteristic;
+        }
+      }
+    }
+    throw 'Device is not supported';
   }
 
   BluetoothDevice _deviceToBlueDevice(Device device) {
-    return blueDevices[device.address];
+    return _blueDevices[device.address];
   }
 
   Device _blueDeviceToDevice(BluetoothDevice device) {

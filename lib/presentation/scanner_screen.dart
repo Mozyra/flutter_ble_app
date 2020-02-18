@@ -19,9 +19,8 @@ class ScannerScreen extends StatefulWidget {
 
 class _ScannerScreenState extends State<ScannerScreen> {
   final _scannerBloc = DeviceModule.scannerBloc();
-
-  Completer<void> _refreshCompleter;
   final _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  Completer<void> _refreshCompleter;
 
   @override
   void initState() {
@@ -40,12 +39,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<ScannerBloc, ScannerState>(
+      bloc: _scannerBloc,
       listener: (context, state) {
         if (state is ScannerResultState) _refreshCompleter.complete();
         if (state is ScannerDeviceOpenState) _openDevicePage();
         if (state is ScannerFailState) _refreshCompleter.complete();
       },
-      bloc: _scannerBloc,
       child: Scaffold(
         appBar: _getAppBar(),
         body: _getBody(),
@@ -60,26 +59,21 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   Widget _getBody() {
-    return BlocBuilder<ScannerBloc, ScannerState>(
-      bloc: _scannerBloc,
-      builder: (context, state) {
-        return Stack(
-          children: <Widget>[
-            _getLoader(),
-            SafeArea(
-              child: RefreshIndicator(
-                key: _refreshIndicatorKey,
-                onRefresh: () {
-                  _refreshCompleter = Completer();
-                  _scannerBloc.add(ScannerRefreshEvent());
-                  return _refreshCompleter.future;
-                },
-                child: _getScannerLayout(),
-              ),
-            ),
-          ],
-        );
-      },
+    return Stack(
+      children: <Widget>[
+        _getLoader(),
+        SafeArea(
+          child: RefreshIndicator(
+            key: _refreshIndicatorKey,
+            onRefresh: () {
+              _refreshCompleter = Completer();
+              _scannerBloc.add(ScannerRefreshEvent());
+              return _refreshCompleter.future;
+            },
+            child: _getScannerLayout(),
+          ),
+        ),
+      ],
     );
   }
 
@@ -112,7 +106,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: widgets.length,
       itemBuilder: (context, index) => widgets[index],
-      separatorBuilder: (context, index) => Divider(),
+      separatorBuilder: (context, index) => Divider(height: 1.0),
     );
   }
 
@@ -125,43 +119,47 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Widget _getDeviceItem(Device device) {
     final name = device.name;
     final address = device.address;
-
     return InkWell(
-      onTap: () => _scannerBloc.add(ScannerDeviceClickedEvent(device)),
-      child: Container(
-        height: 45,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
         child: Row(
-          //mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            _deviceIcon(),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  if (name != '') Text(
-                    name,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16,),
-                    overflow: TextOverflow.fade,
-                  )
-                  else Text(
-                    'null',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                  ),
-                  SizedBox(width: 10,),
-                  Text(
-                    address,
-                    softWrap: false,
-                    overflow: TextOverflow.fade,
-                  ),
-                ],
-              ),
-            ),
+            _getDeviceIcon(),
+            SizedBox(width: 5.0),
+            _getDeviceInfo(name, address)
           ],
         ),
+      ),
+      onTap: () => _scannerBloc.add(ScannerDeviceClickedEvent(device)),
+    );
+  }
+
+  Widget _getDeviceIcon() {
+    return Icon(Icons.bluetooth);
+  }
+
+  Widget _getDeviceInfo(String name, String address) {
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            name.isNotEmpty ? name : 'null',
+            overflow: TextOverflow.fade,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          SizedBox(height: 5.0),
+          Text(
+            address,
+            softWrap: false,
+            overflow: TextOverflow.fade,
+          ),
+        ],
       ),
     );
   }
@@ -179,14 +177,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  Widget _deviceIcon() {
-    return Icon(Icons.bluetooth);
-  }
-
   void _openDevicePage() async {
     Navigator.pushReplacement(
       context,
-//        MaterialPageRoute(builder: (context) => FileListScreen(device)));
       MaterialPageRoute(builder: (context) => WidgetsListScreen()),
     );
   }

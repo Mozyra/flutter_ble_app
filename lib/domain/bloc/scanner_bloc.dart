@@ -28,8 +28,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     try {
       final devices = await _deviceRepository.getBluetoothDevices();
       yield ScannerResultState(devices);
-    }
-    catch (error) {
+    } catch (error) {
       yield ScannerFailState(error);
     }
   }
@@ -42,9 +41,7 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     } catch (error) {
       yield ScannerFailState(error);
     }
-    finally {
-      loaderBloc.add(LoaderStopEvent());
-    }
+    loaderBloc.add(LoaderStopEvent());
   }
 }
 
@@ -59,7 +56,6 @@ class ScannerDeviceClickedEvent extends ScannerEvent {
 abstract class ScannerState {}
 
 class ScannerLoadingState extends ScannerState {}
-class ScannerDeviceOpenState extends ScannerState {}
 class ScannerResultState extends ScannerState {
   final List devices;
   ScannerResultState(this.devices);
@@ -68,4 +64,4 @@ class ScannerFailState extends ScannerState {
   final error;
   ScannerFailState(this.error);
 }
-
+class ScannerDeviceOpenState extends ScannerState {}

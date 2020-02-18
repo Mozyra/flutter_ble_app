@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flash/flash.dart';
 
-import 'package:fullled/presentation/scanner_screen.dart';
-import 'package:fullled/domain/bloc/text_widget_bloc.dart';
 import 'package:fullled/internal/dependencies/application_component.dart';
-import 'package:fullled/presentation/design/placeholders.dart';
+import 'package:fullled/domain/bloc/text_widget_bloc.dart';
 import 'package:fullled/domain/bloc/loader_bloc.dart';
 import 'package:fullled/domain/model/text_widget.dart';
+import 'package:fullled/presentation/design/placeholders.dart';
 
 class TextWidgetScreen extends StatefulWidget {
   final TextWidget textWidget;
@@ -25,11 +24,6 @@ class _TextWidgetScreenState extends State<TextWidgetScreen> {
   TextEditingController _controller = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void dispose() {
     _textWidgetBloc.close();
     _controller.dispose();
@@ -39,19 +33,16 @@ class _TextWidgetScreenState extends State<TextWidgetScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<TextWidgetBloc, TextWidgetState> (
+      bloc: _textWidgetBloc,
       listener: (context, state) {
         if (state is TextWidgetResultState) {
           _controller.clear();
-          _showTopFlash();
-        }
-        if (state is TextWidgetToSettingsState) {
-          _openScannerPage();
+          _showFlash();
         }
         if (state is TextWidgetFailState) {
-          _callSnapBar(state.error.toString());
+          _showSnackBar(state.error.toString());
         }
       },
-      bloc: _textWidgetBloc,
       child: Scaffold(
         key: _scaffoldKey,
         appBar: _getAppBar(),
@@ -60,7 +51,66 @@ class _TextWidgetScreenState extends State<TextWidgetScreen> {
     );
   }
 
-  void _showTopFlash() {
+  Widget _getAppBar() {
+    return AppBar(
+      title: Text('Отправить сообщение'),
+    );
+  }
+
+  Widget _getBody() {
+    return SafeArea(
+      child: _getTextField()
+    );
+  }
+
+  Widget _getTextField() {
+    return Stack(
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.all(10.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Send english text to device',
+                ),
+              ),
+              SizedBox(height: 10),
+              RaisedButton(
+                onPressed: () {
+                  _textWidgetBloc.add(TextWidgetSendTextEvent(
+                      widget.textWidget.uuid,
+                      _controller.text
+                  )
+                  );
+                },
+                child: Text('Отправить'),
+              ),
+            ],
+          ),
+        ),
+        _getLoader(),
+      ],
+    );
+  }
+
+  Widget _getLoader() {
+    return BlocBuilder<LoaderBloc, LoaderState> (
+      bloc: _textWidgetBloc.loaderBloc,
+      builder: (context, state) {
+        if (state is LoaderActiveState) {
+          return Placeholders.loaderPlaceholder();
+        } else {
+          return Container();
+        }
+      },
+    );
+  }
+
+  void _showFlash() {
     showFlash(
       context: context,
       duration: const Duration(seconds: 3),
@@ -86,100 +136,13 @@ class _TextWidgetScreenState extends State<TextWidgetScreen> {
     );
   }
 
-  _callSnapBar(String text) {
+  void _showSnackBar(String text) {
     _scaffoldKey.currentState.showSnackBar(
       SnackBar(
         duration: Duration(),
         backgroundColor: Colors.red,
         content: Text(text),
-      )
+      ),
     );
-  }
-
-  Widget _getAppBar() {
-    return AppBar(
-      title: Text('Отправить сообщение'),
-      actions: <Widget>[
-        _getCloseButton(),
-      ],
-    );
-  }
-
-  Widget _getBody() {
-    return SafeArea(
-      child: _getTextField());
-  }
-
-  Widget _getTextField() {
-    return BlocBuilder<TextWidgetBloc, TextWidgetState> (
-      bloc: _textWidgetBloc,
-      builder: (context, state) {
-        return Stack(
-          children: <Widget>[
-            Padding(
-              padding: EdgeInsets.all(10.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Send english text to device',
-                    ),
-                    onSubmitted: (_) {
-                      print(widget.textWidget.uuid);
-                      _textWidgetBloc.add(TextWidgetSendTextEvent(
-                          widget.textWidget.uuid,
-                          _controller.text
-                        )
-                      );
-                    }
-                  ),
-                  SizedBox(height: 10,),
-                  RaisedButton(
-                    onPressed: () {
-                      print(widget.textWidget.uuid);
-                      _textWidgetBloc.add(TextWidgetSendTextEvent(
-                          widget.textWidget.uuid,
-                          _controller.text
-                        )
-                      );
-                    },
-                    child: Text('Отправить'),
-                  ),
-                ],
-              ),
-            ),
-            _getLoader(),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _getLoader() {
-    return BlocBuilder<LoaderBloc, LoaderState> (
-      bloc: _textWidgetBloc.loaderBloc,
-      builder: (context, state) {
-        if (state is LoaderActiveState) {
-          return Placeholders.loaderPlaceholder();
-        } else {
-          return Container();
-        }
-      }
-    );
-  }
-
-  Widget _getCloseButton() {
-    return IconButton(
-      icon: Icon(Icons.close),
-      onPressed: () => _textWidgetBloc.add(TextWidgetSettingsEvent()),
-    );
-  }
-
-  void _openScannerPage() {
-    Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) => ScannerScreen()));
   }
 }
