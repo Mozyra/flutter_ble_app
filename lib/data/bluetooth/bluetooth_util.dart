@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:async';
 
 import 'package:flutter_blue/flutter_blue.dart';
@@ -37,6 +38,9 @@ class BluetoothUtil {
       autoConnect: false,
       timeout: Duration(seconds: 5),
     );
+    if (Platform.isAndroid) {
+      await bluetoothDevice.requestMtu(512);
+    }
     _currentDevice = bluetoothDevice;
   }
 
