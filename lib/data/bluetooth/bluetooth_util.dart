@@ -60,6 +60,7 @@ class BluetoothUtil {
   }
 
   Future<List<int>> sendRequest(List<int> request) async {
+    await Future.delayed(Duration(milliseconds: 250));
     final characteristic = await _getCharacteristic();
     await characteristic.write(request);
     List<int> response = await characteristic.read();
